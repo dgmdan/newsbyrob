@@ -47,12 +47,6 @@ def _postgres_database_config():
     if not name:
         raise ImproperlyConfigured('DATABASE_URL must include the database name')
 
-    schema = os.environ.get('DATABASE_SCHEMA')
-    if not schema:
-        schema = 'newsbyrob' if ENVIRONMENT == 'production' else 'public'
-
-    sanitized_schema = schema.replace('"', '""')
-
     return {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': name,
@@ -60,9 +54,6 @@ def _postgres_database_config():
         'PASSWORD': _decode_component(parsed.password),
         'HOST': parsed.hostname or '',
         'PORT': str(parsed.port) if parsed.port else '',
-        'OPTIONS': {
-            'options': f'-c search_path="{sanitized_schema}"',
-        },
     }
 
 
