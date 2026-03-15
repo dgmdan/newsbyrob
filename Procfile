@@ -1,2 +1,2 @@
-release: python manage.py migrate
+release: scripts/release.sh
 web: scripts/start_web.sh
