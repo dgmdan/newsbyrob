@@ -3,50 +3,11 @@ import numpy as np
 import datetime
 import logging
 from rich.progress import Progress
-from dataclasses import dataclass
 from os.path import exists
 
-import uscis, travel, ice, g_news, aila, boundless, support #cbp,
-from support import log_time, logger, console, move_log
-
-################################# Global Variable Setup ####################################
-SITES = {
-    "USCIS"    : ("https://www.uscis.gov", uscis),
-    "DOS"      : ("https://travel.state.gov", travel),
-    "Boundless": ("https://www.boundless.com", boundless),
-    "Google"   : ("https://www.news.google.com", g_news),
-    "AILA"     : ("https://www.aila.org", aila),    
-    "ICE"      : ("https://www.ice.gov", ice),
-    # "CBP"    : ("https://www.cbp.gov", cbp),  #Sunsetting CBP 3-7-25.  They basically only report finding drugs at the border
-}
-
-CATEGORIES = {
-    "USCIS"    : ["Fact Sheets", "News Releases", "Stakeholder Messages", "Alerts", "Forms Updates"], 
-    "DOS"      : ["main_feed"], 
-    "Boundless": ["Boundless Blog"], #, "Boundless Weekly"    
-    "Google"   : ["US Immigration Changes", "USCIS Updates"],
-    "AILA"     : ["AILA Daily News Update"],
-    "ICE"      : ["Management and Administration", "Operational", "Profesional Responsibility", "National Security", "Partnership and Engagement", "Enforcement and Removal", "Transnational Gangs"]
-    #"CBP"     : ["Travel updates","Trusted traveler updates","Border Security","Newsroom"], #"Border wait time feeds" currently down, Also security might be redundant here
-}
-
-#Define dataclass container
-@dataclass
-class NewArticle():
-    author      : str = None
-    category    : str = None
-    country     : str = ""
-    creator     : str = None
-    description : str = None
-    id          : str = None
-    identifier  : str = ""
-    keyword     : str = ""
-    link        : str = None
-    pub_date    : datetime.datetime = ""
-    pull_date   : datetime.datetime = ""
-    source      : str = None
-    threat_level: str = ""
-    title       : str = None
+from scripts import support
+from scripts.feed_config import CATEGORIES, NewArticle, SITES
+from scripts.support import log_time, logger, console, move_log
 
 ################################# Main Funcs ####################################
 #FUNCTION Add Data

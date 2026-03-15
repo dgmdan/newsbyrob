@@ -82,12 +82,30 @@ def send_email_update(urls:str):
         """
         return html
 
-    with open('./secret/login.txt') as login_file:
-        login = login_file.read().splitlines()
-        sender_email = login[0].split(':')[1]
-        password = login[1].split(':')[1]
-        receiver_email = login[2].split(':')[1].split(",")
-        
+    def _parse_field(line: str, default: str = "") -> str:
+        parts = line.split(":", 1)
+        return parts[1].strip() if len(parts) == 2 else parts[0].strip()
+
+    try:
+        with open('./secret/login.txt') as login_file:
+            login = [line.strip() for line in login_file.read().splitlines() if line.strip()]
+    except FileNotFoundError:
+        logger.warning("secret/login.txt not found; skipping email delivery.")
+        return False
+
+    if len(login) < 3:
+        logger.warning("secret/login.txt must contain username, password, and recipients lines; skipping email delivery.")
+        return False
+
+    sender_email = _parse_field(login[0])
+    password = _parse_field(login[1])
+    recipients = _parse_field(login[2]).split(",")
+    receiver_email = [email.strip() for email in recipients if email.strip()]
+
+    if not sender_email or not password or not receiver_email:
+        logger.warning("Incomplete login details found; skipping email delivery.")
+        return False
+
     # Establish a secure session with gmail's outgoing SMTP server using your gmail account
     smtp_server = "smtp.gmail.com"
     port = 465 #used for a secure connection with SSL encryption#  #587 is the newer ver with TLS
@@ -107,6 +125,7 @@ def send_email_update(urls:str):
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)		
         server.sendmail(sender_email, receiver_email, message.as_string())
+    return True
 
 ################################# Timing Func ####################################
 def log_time(fn):
@@ -351,5 +370,3 @@ def load_historical(fp:str)->json:
             for key in jsondata.keys():
                 jsondata[key]["pub_date"] = date_convert(jsondata[key]["pub_date"])
             return jsondata	
-
-

@@ -1,100 +1,81 @@
-<h1 align="center">
-  <b>News by Rob</b><br>
-</h1>
+# News by Rob
 
-<p align="center">
-      <a href="https://www.python.org/">
-        <img src="https://img.shields.io/badge/Python->3.11-blue" /></a>    
-</p>
+[![Python ->3.11](https://img.shields.io/badge/Python-%3E3.11-blue)](https://www.python.org/)
 
 ## Purpose
-A dear friend of my fiancee, Rob, used to circulate and currate his own email
-listings of different and interesting changes in US immigration law. Sadly, he
-recently passed away and as a present to my fiancee I wanted to recreate that
-information exchange so that she could both remember/honor him and stay up to
-date on any changes that may influence her work.  In general, it is difficult to
-track these changes as they're spread across 7 different sites and have
-different categories that all need manual inspection for quality. This software
-has the capability to ingest that information from these sites via RSS feeds.
-(via xml).  One blog uses a different extraction method, but that's a special
-use case and isolated to that script.  After aggregating all new articles, it
-emails you any new findings.
-
-If there are other immigration lawyers who are in need of this information.
-Feel free to clone and use the repo for your own purposes.  You will need to
-create a dummy gmail account for utilizing the email function.  Information as
-to how to do that can be found here.
-
-[Real Python Article](https://realpython.com/python-send-email/)
-
+A dear friend of my fiancée, Rob, used to curate his own email listings of the latest shifts in U.S. immigration law. When he passed, I built this project so that the same news could keep circulating in his memory. The scraper aggregates RSS feeds across multiple government and advocacy sites, stores every article in a SQLite database, and still emails you whenever new content is discovered. The Django web layer now lets you browse the accumulated links, see what tags were applied, and filter the roster of stories without opening an inbox.
 
 ## Requirements
-- Python >= 3.11
+- Python 3.11+
+- All dependencies listed in `requirements.txt` (Django 5.2.7 is bundled with the rest).
 
-## Cloning and setting up environment.
-Launch VSCode if that is IDE of choice.
+## Cloning and setting up the environment
+Open a terminal and run the following (adjust the directory path as needed):
 
-```
-`CTRL + SHIFT + ~` will open a terminal
-Navigate to the directory where you want to clone the repo. 
-
+```bash
 $ git clone https://github.com/Landcruiser87/newsbyrob.git
 $ cd newsbyrob
 $ python -m venv .news_venv
-(Or replace .news_venv with whatever you want to call your environment)	
-
-On Windows
-$ .news_venv\Scripts\activate.bat
-
-On Mac
-$ source .news_venv/bin/activate
+$ source .news_venv/bin/activate  # On Windows: .news_venv\\Scripts\\activate.bat
 ```
 
-Before next step, ensure you see the environment name to the left of your
-command prompt.  If you see it and the path file to your current directory, then
-the environment is activated.   If you don't activate it, and start installing
-things.  You'll install all the `requirements.txt` libraries into your `base
-python environment.` Which will lead to dependency problems down the road.  I
-promise. After that has been activated, go to your terminal and type `pip list`
-to check your base python libraries.  Now is a good time to upgrade pip and
-setuptools. As those should be the only two libraries you see on a clean python
-installation.  If not...  well.
+Upgrade `pip`/`setuptools` and confirm you only see the base packages:
 
-![Screenshot 2023-03-28 144052](https://user-images.githubusercontent.com/16505709/228358535-3364e0ea-b273-40b8-ab59-4dddf2f92ee2.png)
-
-
-Next install the required libraries with the below pip command!
-
+```bash
+$ pip install --upgrade pip setuptools
+$ pip list  # Expect just pip/setuptools in a fresh venv
 ```
+
+Now install the project dependencies:
+
+```bash
 $ pip install -r requirements.txt
 ```
 
-Order of operations of above terminal commands. 
-- Open Terminal
-- Clone repo
-- Change directories
-- Create venv
-- Activate venv
-- Upgrade pip (because reasons)
-- Install libraries
-
-## File Setup
-While in root directory run commands below
-```
-$ mkdir data data/logs
-$ mkdir secret
+## Directory and secret setup
+```bash
+$ mkdir -p data/logs
+$ mkdir -p secret
 ```
 
-Within the secret folder, make a file called `login.txt`
-Enter the following on the first 3 lines separated by a `colon`
-1. username:str of email
-2. pwd:str of pwd
-3. recipient emails:sep str of emails
+Inside `secret/login.txt`, place three colon-separated values, one per line:
 
-## Sites Searched
+1. `username:your.email@gmail.com`
+2. `password:app-specific-password`
+3. `recipients:you@example.com,them@example.com`
 
-- Aggregate news data from these sources.  
-- Sites searched are:
+The scraper still relies on Gmail SMTP and the same `support.send_email_update` helper, so keep that file on disk and guard it with strict permissions.
+
+## Running the scraper and web UI
+1. Let Django prepare the SQLite schema:
+   ```bash
+   $ python manage.py migrate
+   ```
+2. Scrape the feeds once, populate the database, and trigger the familiar notification email:
+   ```bash
+   $ python manage.py collect_news
+   ```
+   This command reuses the RSS/Playwright modules under `scripts/`, stores every item in `db.sqlite3`, updates `data/im_updates.json`, and keeps sending the same emails you got before.
+3. Start the development server:
+   ```bash
+   $ python manage.py runserver
+   ```
+4. Visit `http://127.0.0.1:8000/` to browse collected articles. Use the tag filters at the top of the page to narrow results, and click any headline to jump to the original story. The UI is backed by tags derived from the original category names and keywords, so you can also filter on sites or curated terms.
+
+Want to manage the records via the admin? Create a superuser (if you haven’t already):
+
+```bash
+$ python manage.py createsuperuser
+```
+
+## Data layout
+- `db.sqlite3` holds the new Django models (`Article` and `Tag`).
+- `data/im_updates.json` is rewritten every time `collect_news` runs and mirrors the historical structure that the old CLI used.
+- Logs are written to `data/logs/<timestamp>.log`.
+- The `secret/login.txt` file is persisted but ignored by Git (`.gitignore` already covers `secret/`).
+
+## Sites scraped
+- Aggregate news data from:
   - [Boundless](https://www.boundless.com)
   - [USCIS](https://www.uscis.gov/news/rss-feed/59144)
   - [DOS](https://travel.state.gov/_res/rss/TAsTWs.xml#.html)
@@ -102,5 +83,17 @@ Enter the following on the first 3 lines separated by a `colon`
   - [Google News](https://news.google.com/rss)
   - [AILA](https://aila.org)
 
-- Sunsetted sites
+- Sunsetted feeds:
   - [CBP](https://www.cbp.gov/rss)
+
+## CLI
+The original script is still available under `scripts/main.py`. You can run it via `python -m scripts.main` if you need the old progress bar behavior, but picture it as another way to feed `data/im_updates.json`. The source of truth is now the SQLite-backed Django web app.
+
+## Running tests
+Run Django’s test suite with:
+
+```bash
+$ python manage.py test newsfeed
+```
+
+If you ever add tests elsewhere, just point the command at that app (e.g., `python manage.py test newsfeed.models`). The command uses the same SQLite settings, so it works inside your activated virtualenv.

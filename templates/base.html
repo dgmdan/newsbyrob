@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>U.S. Immigration Law News by Rob</title>
+    <style>
+        :root {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            color: #111;
+            background-color: #f9fafb;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #fefefe, #f4f5f7);
+        }
+        header {
+            background: tan;
+            color: white;
+            padding: 1rem 1.5rem;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+        header h1 a {
+            color: inherit;
+            text-decoration: none;
+        }
+        main {
+            padding: 1.5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        footer {
+            text-align: center;
+            padding: 1rem 1.5rem;
+            color: #475569;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><a href="{% url 'newsfeed:article_list' %}">U.S. Immigration Law News by Rob</a></h1>
+        <p>Curated immigration news from the sources Rob trusted.</p>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        Data is refreshed via the same RSS scraper and email flow that powers the CLI.
+    </footer>
+</body>
+</html>

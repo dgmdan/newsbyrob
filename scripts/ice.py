@@ -2,7 +2,7 @@ import time
 import datetime
 # import requests
 import curl_cffi as cf
-from support import logger, USER_AGENTS, chrome_version
+from scripts.support import logger, USER_AGENTS, chrome_version
 from bs4 import BeautifulSoup
 
 def date_convert(time_str:str)->datetime:

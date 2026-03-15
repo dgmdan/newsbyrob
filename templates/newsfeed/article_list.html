@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load newsfeed_tags %}
+
+{% block content %}
+    <section>
+        <div class="filter-bar">
+            <span>Filter tags:</span>
+            <a href="{% url 'newsfeed:article_list' %}" class="{% if not active_tag %}active{% endif %}">All</a>
+            {% for tag in tags %}
+                <a href="?tag={{ tag.slug }}" class="{% if tag.slug == active_tag %}active{% endif %}">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+        {% if articles %}
+            <div class="article-grid">
+                {% for article in articles %}
+                    <article class="story">
+                        <header>
+                            <h2><a href="{{ article.link }}" target="_blank" rel="noreferrer">{{ article.title|default:"Untitled"|striptags }}</a></h2>
+                            <p class="meta-row">
+                                <span>{{ article.site }}</span>
+                                {% if article.category %} | <span>{{ article.category }}</span>{% endif %}
+                                {% if article.pub_date %} | <span>{{ article.pub_date|date:"M d, Y H:i" }}</span>{% endif %}
+                            </p>
+                        </header>
+                        {% if article.description %}
+                            <div class="summary">{{ article.description|article_snippet:300 }}</div>
+                        {% endif %}
+                        {% if article.tags.all %}
+                            <p class="tag-row">
+                                {% for tag in article.tags.all %}
+                                    <a href="?tag={{ tag.slug }}">{{ tag.name }}</a>
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+            {% if is_paginated %}
+                <nav class="pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% if active_tag %}&tag={{ active_tag }}{% endif %}">← Previous</a>
+                    {% endif %}
+                    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if active_tag %}&tag={{ active_tag }}{% endif %}">Next →</a>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        {% else %}
+            <p>No articles have been collected yet. Run <code>python manage.py collect_news</code>.</p>
+        {% endif %}
+    </section>
+    <style>
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        .filter-bar a {
+            text-decoration: none;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid #94a3b8;
+            color: #0f172a;
+        }
+        .filter-bar a.active {
+            background: #0f172a;
+            color: white;
+            border-color: #0f172a;
+        }
+        .article-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        .story {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background: white;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+        }
+        .story header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+        article.story header h2 a,
+        article.story header h2 a:link,
+        article.story header h2 a:visited {
+            text-decoration: none;
+            background-color: transparent;
+        }
+        .meta-row {
+            font-size: 0.85rem;
+            color: #475569;
+            margin: 0.25rem 0 0;
+        }
+        .summary {
+            margin: 0.75rem 0;
+            color: #333;
+        }
+        .tag-row {
+            margin: 0;
+        }
+        .tag-row a {
+            margin-right: 0.5rem;
+            font-size: 0.85rem;
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .pagination {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .pagination a {
+            color: #111827;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+{% endblock %}

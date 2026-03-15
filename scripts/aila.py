@@ -2,7 +2,7 @@ import time
 import datetime
 import requests
 import numpy as np
-from support import logger
+from scripts.support import logger
 from bs4 import BeautifulSoup
 
 def date_convert(time_str:str)->datetime:

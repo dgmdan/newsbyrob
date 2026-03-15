@@ -1,6 +1,6 @@
 import time
 import datetime
-from support import logger
+from scripts.support import logger
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 from playwright._impl._errors import Error as PlaywrightError
