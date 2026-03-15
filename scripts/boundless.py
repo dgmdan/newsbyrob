@@ -30,7 +30,7 @@ def get_articles(result:BeautifulSoup, cat:str, source:str, NewArticle)->list:
     #Set the outer loop over each card returned. 
     for child in result:
         article = NewArticle()
-        article.id = child.get("id", default_val)
+        article.id = child.find("a").get("data-wf-cms-context", default_val)
         #If no ID found, move along!
         if not article.id: 
             logger.warning("Article missing ID")
@@ -52,21 +52,22 @@ def get_articles(result:BeautifulSoup, cat:str, source:str, NewArticle)->list:
         article.source = source
 
         #grab the title
-        article.title = child.find("a").get("title", default_val)
+        article.title = child.find("div", class_="heading-style-h7-2").text.strip()
         
         #grab the url
         article.link = child.find("a").get("href", default_val)
 
-        article.description = child.find("p", class_=lambda x: x and x.startswith("o-block")).text.strip()
+        article.description = child.find("div", class_="text-size-body3-4 text-style-2lines").text.strip()
         
         #Not available either without digesting the downstream link
-        article.pub_date = date_convert(child.find("span", class_=lambda x: x and x.startswith("o-block")).text.strip())
+        article.pub_date = date_convert(child.find("div", {"fs-list-fieldtype":"date"}).text.strip())
 
         articles.append(article)
     
     return articles
 
 def get_html(url: str, retries:int = 3, delay:int = 5):
+    browser = None
     for attempt in range(retries):
         try:
             with sync_playwright() as p:
@@ -95,7 +96,7 @@ def get_html(url: str, retries:int = 3, delay:int = 5):
                 page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                 time.sleep(2)
 
-                page.wait_for_selector("section", timeout=15000)
+                page.wait_for_selector(".w-dyn-item", timeout=15000)
                 html = page.content()
                 logger.info("HTML retrieved")
                 return html
@@ -130,8 +131,8 @@ def ingest_xml(cat:str, source:str, NewArticle)->list:
         new_articles (list): List of dataclass objects
     """
     feeds = {
-        "Boundless Blog"  :"https://www.boundless.com/blog/category/immigration-news/",
-        # "Boundless Weekly":"https://www.boundless.com/blog/boundless-weekly-immigration-news/"
+        "Boundless Blog"  :"https://www.boundless.com/blog-topics/immigration-news/",
+        # "Boundless Weekly":"https://www.boundless.com/blog-topics/boundless-weekly-immigration-news/"
     }
     new_articles = []
     url = feeds.get(cat)
@@ -146,7 +147,7 @@ def ingest_xml(cat:str, source:str, NewArticle)->list:
         bs4ob = BeautifulSoup(response, features="lxml")
 
         #Find all records (item CSS)
-        results = bs4ob.find_all("article", class_=lambda x: x and x.startswith("o-grid"))
+        results = bs4ob.find_all("div", {"role":"listitem"}, class_="cards-collection-item w-dyn-item")
         if results:
             new_articles = get_articles(results, cat, source, NewArticle)
             logger.info(f'{len(new_articles)} articles returned from {source}')

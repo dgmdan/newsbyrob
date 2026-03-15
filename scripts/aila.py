@@ -155,8 +155,3 @@ def ingest_xml(cat:str, source:str, NewArticle)->list:
 #
 # Basic URl structure of searching postings
 #https://www.aila.org/recent-postings?FromDate=2025-02-28&ToDate=2025-03-07&limit=50
-
-#Lol.  Or i caould just grab the hardcoded 
-#news summary they already have
-#https://www.aila.org/library/daily-immigration-news-clips-march-6-2025
-#Def doing that. 
