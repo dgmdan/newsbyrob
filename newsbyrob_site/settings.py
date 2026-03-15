@@ -57,9 +57,14 @@ def _postgres_database_config():
     }
 
 
+DEFAULT_ALLOWED_HOSTS = ['newsbyrob.com', 'newsbyrob-prod2-wjmw9.ondigitalocean.app']
+
+
 def _allowed_hosts():
-    hosts = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost')
-    return [host.strip() for host in hosts.split(',') if host.strip()]
+    hosts = os.environ.get('ALLOWED_HOSTS')
+    if hosts:
+        return [host.strip() for host in hosts.split(',') if host.strip()]
+    return DEFAULT_ALLOWED_HOSTS
 
 
 ALLOWED_HOSTS = _allowed_hosts()
