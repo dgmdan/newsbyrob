@@ -10,10 +10,59 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+ENVIRONMENT = os.environ.get('DJANGO_ENV', 'development').strip().lower()
+DEBUG = ENVIRONMENT != 'production'
+
+
+def _decode_component(value: str | None) -> str:
+    return unquote(value) if value else ''
+
+
+def _sqlite_database_config():
+    return {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+
+
+def _postgres_database_config():
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        raise ImproperlyConfigured('DATABASE_URL must be set when DJANGO_ENV=production')
+
+    parsed = urlparse(database_url)
+    if parsed.scheme not in ('postgres', 'postgresql'):
+        raise ImproperlyConfigured('DATABASE_URL must use the postgres scheme')
+
+    name = parsed.path.lstrip('/')
+    if not name:
+        raise ImproperlyConfigured('DATABASE_URL must include the database name')
+
+    return {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': name,
+        'USER': _decode_component(parsed.username),
+        'PASSWORD': _decode_component(parsed.password),
+        'HOST': parsed.hostname or '',
+        'PORT': str(parsed.port) if parsed.port else '',
+    }
+
+
+def _allowed_hosts():
+    hosts = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost')
+    return [host.strip() for host in hosts.split(',') if host.strip()]
+
+
+ALLOWED_HOSTS = _allowed_hosts()
 
 
 # Quick-start development settings - unsuitable for production
@@ -23,9 +72,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-8974hjclxw8xl-!3yfw7j8(70%g@p_7g9euobw3fp0ku^9luc)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -74,10 +120,7 @@ WSGI_APPLICATION = 'newsbyrob_site.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': _postgres_database_config() if ENVIRONMENT == 'production' else _sqlite_database_config()
 }
 
 

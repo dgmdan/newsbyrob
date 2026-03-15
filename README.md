@@ -46,6 +46,12 @@ Inside `secret/login.txt`, place three colon-separated values, one per line:
 
 The scraper still relies on Gmail SMTP and the same `support.send_email_update` helper, so keep that file on disk and guard it with strict permissions.
 
+## Environment configuration
+
+- `DJANGO_ENV` defaults to `development` and keeps the app running against `db.sqlite3` inside the project root.
+- Set `DJANGO_ENV=production` in hosted deployments along with a Postgres URI stored in `DATABASE_URL` (for example `postgresql://user:pass@db.example.com:5432/newsbyrob`). The settings loader requires `DATABASE_URL` and validates that it includes a database name.
+- Override `ALLOWED_HOSTS` (comma separated) when your production hostnames differ from `localhost`.
+
 ## Running the scraper and web UI
 1. Let Django prepare the SQLite schema:
    ```bash
