@@ -1,3 +1,4 @@
+from django.db.models import Count
 from django.views.generic import ListView
 
 from .models import Article, Tag
@@ -18,6 +19,10 @@ class ArticleListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["tags"] = Tag.objects.order_by("name")
+        context["tags"] = (
+            Tag.objects.annotate(article_count=Count("articles"))
+            .filter(article_count__gt=0)
+            .order_by("name")
+        )
         context["active_tag"] = self.request.GET.get("tag")
         return context
