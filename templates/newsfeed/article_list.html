@@ -55,11 +55,11 @@
             {% if is_paginated %}
                 <nav class="pagination">
                     {% if page_obj.has_previous %}
-                        <a href="?page={{ page_obj.previous_page_number }}{% if active_tag %}&tag={{ active_tag }}{% endif %}">← Previous</a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if active_tag %}&tag={{ active_tag }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">← Previous</a>
                     {% endif %}
                     <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
                     {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}{% if active_tag %}&tag={{ active_tag }}{% endif %}">Next →</a>
+                        <a href="?page={{ page_obj.next_page_number }}{% if active_tag %}&tag={{ active_tag }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">Next →</a>
                     {% endif %}
                 </nav>
             {% endif %}
