@@ -3,7 +3,6 @@ import json
 import re
 from pathlib import Path
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
@@ -30,13 +29,9 @@ def _parse_datetime(value: str | None) -> datetime.datetime | None:
 
 
 class Command(BaseCommand):
-    help = "Load the existing JSON data dump into the local database (development only)."
+    help = "Load the existing JSON data dump into the database; usable in any environment."
 
     def handle(self, *args, **options):
-        environment = getattr(settings, "ENVIRONMENT", "development").strip().lower()
-        if environment == "production":
-            raise CommandError("This import is only allowed in development environments.")
-
         data_file = Path(settings.BASE_DIR, "data", "im_updates.json")
         if not data_file.exists():
             raise CommandError("data/im_updates.json is missing; run the scraper first.")
