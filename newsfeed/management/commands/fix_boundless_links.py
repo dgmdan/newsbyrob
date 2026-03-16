@@ -11,6 +11,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         base_url = SITES["Boundless"][0]
+        base_parsed = urlparse(base_url)
+        base_netloc = base_parsed.netloc.lower()
+        allowed_hosts = {base_netloc, base_netloc.removeprefix("www.")}
+
         boundless_articles = (
             Article.objects.filter(site="Boundless")
             .exclude(link__isnull=True)
@@ -24,10 +28,15 @@ class Command(BaseCommand):
                 continue
 
             parsed = urlparse(raw_link)
-            if parsed.scheme in {"http", "https"} and parsed.netloc:
-                continue
+            new_link = raw_link
 
-            new_link = urljoin(base_url, raw_link)
+            if parsed.scheme in {"http", "https"} and parsed.netloc:
+                host = parsed.netloc.lower()
+                if host not in allowed_hosts:
+                    new_link = parsed._replace(scheme=base_parsed.scheme, netloc=base_parsed.netloc).geturl()
+            else:
+                new_link = urljoin(base_url, raw_link)
+
             if new_link == raw_link:
                 continue
 
