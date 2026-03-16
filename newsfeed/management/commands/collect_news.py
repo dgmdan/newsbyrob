@@ -4,30 +4,59 @@ import re
 
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
 from newsfeed.models import Article, Tag
 from scripts.feed_config import CATEGORIES, NewArticle, SITES
-from scripts.support import logger, save_data, send_email_update, urlformat
+from scripts.support import logger, send_email_update, urlformat
 
 
 TAG_SPLIT_RE = re.compile(r"[;,|]")
+UNINFORMATIVE_SECTION_LABELS = {"national", "local", "regional", "international"}
 
 
 class Command(BaseCommand):
     help = "Scrape the configured immigration RSS feeds, store new articles, and email the report."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--site",
+            choices=SITES.keys(),
+            help="Only run the scraper for the given site (e.g., AILA).",
+        )
+        parser.add_argument(
+            "--category",
+            help="Limit the run to a specific category. Requires --site to be set.",
+        )
+
     def handle(self, *args, **options):
+        selected_site = options.get("site")
+        selected_category = options.get("category")
+        if selected_category and not selected_site:
+            raise CommandError("--category requires --site to be set.")
+        if selected_site:
+            enabled_categories = CATEGORIES.get(selected_site, [])
+            if not enabled_categories:
+                raise CommandError(f"No categories configured for {selected_site}.")
+            if selected_category and selected_category not in enabled_categories:
+                raise CommandError(
+                    f"Category {selected_category!r} is not configured for {selected_site}."
+                )
+
         newstories = []
         created_count = 0
 
         with transaction.atomic():
             for site_name, (base_url, module) in SITES.items():
+                if selected_site and site_name != selected_site:
+                    continue
                 categories = CATEGORIES.get(site_name, [])
                 for category in categories:
+                    if selected_category and category != selected_category:
+                        continue
                     try:
                         feed_items = module.ingest_xml(category, base_url, NewArticle)
                     except Exception as exc:  # defensive guard
@@ -43,8 +72,6 @@ class Command(BaseCommand):
                             created_count += 1
                             if article.link:
                                 newstories.append((article.link, site_name, category, article.title))
-        save_data(self._build_json_payload())
-
         if newstories:
             html = urlformat(newstories)
             email_sent = send_email_update(html)
@@ -106,8 +133,11 @@ class Command(BaseCommand):
 
     def _resolve_description(self, description: str | None, title: str, link: str | None) -> str:
         description = description or ""
+        fallback_description = description
         if description and not self._description_repeats_title(description, title):
-            return description
+            if not self._description_uninformative(description):
+                return description
+            description = ""
         if description and self._is_anchor_only_description(description, title):
             snippet = self._fetch_first_paragraph(link)
             if snippet:
@@ -116,7 +146,7 @@ class Command(BaseCommand):
         snippet = self._fetch_first_paragraph(link)
         if snippet:
             return f"<p>{html.escape(snippet)}</p>"
-        return description
+        return fallback_description
 
     def _description_repeats_title(self, description: str, title: str) -> bool:
         if not title:
@@ -127,6 +157,10 @@ class Command(BaseCommand):
         text_lower = text.lower()
         title_lower = title.lower()
         return text_lower.startswith(title_lower) and len(text_lower) <= len(title_lower) + 15
+
+    def _description_uninformative(self, description: str) -> bool:
+        text = BeautifulSoup(description, "html.parser").get_text(" ", strip=True).strip()
+        return not text or len(text) <= 3 or text.lower() in UNINFORMATIVE_SECTION_LABELS
 
     def _is_anchor_only_description(self, description: str, title: str) -> bool:
         soup = BeautifulSoup(description, "html.parser")

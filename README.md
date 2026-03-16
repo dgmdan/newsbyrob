@@ -64,7 +64,7 @@ The scraper still relies on Gmail SMTP and the same `support.send_email_update` 
    ```bash
    $ python manage.py collect_news
    ```
-   This command reuses the RSS/Playwright modules under `scripts/`, stores every item in `db.sqlite3`, updates `data/im_updates.json`, and keeps sending the same emails you got before.
+   This command reuses the RSS/Playwright modules under `scripts/`, stores every item in `db.sqlite3`, and emails the new links.
 3. Start the development server:
    ```bash
    $ python manage.py runserver
@@ -81,7 +81,6 @@ $ python manage.py createsuperuser
 
 ## Data layout
 - `db.sqlite3` holds the new Django models (`Article` and `Tag`).
-- `data/im_updates.json` is rewritten every time `collect_news` runs and mirrors the historical structure that the old CLI used.
 - Logs are written to `data/logs/<timestamp>.log`.
 - The `secret/login.txt` file is persisted but ignored by Git (`.gitignore` already covers `secret/`).
 
@@ -96,9 +95,6 @@ $ python manage.py createsuperuser
 
 - Sunsetted feeds:
   - [CBP](https://www.cbp.gov/rss)
-
-## CLI
-The original script is still available under `scripts/main.py`. You can run it via `python -m scripts.main` if you need the old progress bar behavior, but picture it as another way to feed `data/im_updates.json`. The source of truth is now the SQLite-backed Django web app.
 
 ## Running tests
 Run Django’s test suite with:

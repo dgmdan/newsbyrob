@@ -1,10 +1,8 @@
 import os
 import time
-import json
 import shutil
 import datetime
-import numpy as np
-import json
+import random
 import logging
 
 #Progress bar fun
@@ -227,7 +225,7 @@ start_time = get_time().strftime("%m-%d-%Y_%H-%M-%S")
 console = Console(color_system="auto", stderr=True, width=200)
 log_dir = Path.cwd() / "data" / "logs" / f"{start_time}.log"
 logger = get_logger(log_dir=log_dir, console=console)
-chrome_version = np.random.randint(130, 142)
+chrome_version = random.randint(130, 142)
 
 #Additional USER agents
 USER_AGENTS = [
@@ -247,27 +245,6 @@ USER_AGENTS = [
 ]
 
 
-#CLASS Numpy encoder
-class NumpyArrayEncoder(json.JSONEncoder):
-    """Custom numpy JSON Encoder.  Takes in any type from an array and formats it to something that can be JSON serialized.
-    Source Code found here.  https://pynative.com/python-serialize-numpy-ndarray-into-json/
-    Args:
-        json (object): Json serialized format
-    """	
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, str):
-            return str(obj)
-        elif isinstance(obj, datetime.datetime):
-            return datetime.datetime.strftime(obj, "%m-%d-%Y_%H-%M-%S")
-        else:
-            return super(NumpyArrayEncoder, self).default(obj)
-        
 ################################# Rich Spinner Control ####################################
 
 #FUNCTION sleep progbar
@@ -315,53 +292,3 @@ def add_spin_subt(prog:Progress, msg:str, howmanysleeps:int):
         prog.update(liljob, advance=1)
     #Hide secondary progress bar
     prog.update(liljob, visible=False)
-
-################################# Date/Load/Save Funcs ####################################
-
-#FUNCTION Save Data
-def save_data(jsond:dict):
-    """This function saves the dictionary to a JSON file. 
-
-    Args:
-        jsond (dict): Main dictionary container
-    """    
-    # Sort by published date. U Have to sort it by string because some of the
-    # datetimes stored are timezone aware, some are not therefore you have to
-    # turn it into a Y-M-D string then split it on the ("-") so you can first 
-    # sort by year, then month, then day.
-    sorted_dict = dict(sorted(jsond.items(), key=lambda x:datetime.datetime.strftime(x[1]["pub_date"], "%Y-%m-%d").split("-"), reverse=True))
-    out_json = json.dumps(sorted_dict, indent=2, cls=NumpyArrayEncoder)
-    with open("./data/im_updates.json", "w") as out_f:
-        out_f.write(out_json)
-
-#FUNCTION Convert Date
-def date_convert(str_time:str)->datetime:
-    """When Loading the historical data.  Turn all the published dates into datetime objects so they can be sorted in the save routine. 
-
-    Args:
-        str_time (str): Converts a string to a datetime object 
-
-    Returns:
-        dateOb (datetime): str_time as a datetime object
-    """    
-    dateOb = datetime.datetime.strptime(str_time,'%m-%d-%Y_%H-%M-%S')
-    return dateOb
-
-#FUNCTION Load Historical
-def load_historical(fp:str)->json:
-    """Loads the saved JSON of previously scraped data.
-
-    Args:
-        fp (str): File path for saving
-
-    Returns:
-        jsondata (JSON): dictionary version of saved JSON
-    """    
-    if exists(fp):
-        with open(fp, "r") as f:
-            jsondata = json.loads(f.read())
-            #Quick format the pub date strings back to dates. 
-            #We need them as dates to sort them on the save above.
-            for key in jsondata.keys():
-                jsondata[key]["pub_date"] = date_convert(jsondata[key]["pub_date"])
-            return jsondata	

@@ -47,9 +47,8 @@ class NewsfeedViewsTestCase(TestCase):
 
 
 class CollectNewsCommandTestCase(TestCase):
-    @patch("newsfeed.management.commands.collect_news.save_data")
     @patch("newsfeed.management.commands.collect_news.send_email_update", return_value=False)
-    def test_collect_news_creates_articles(self, mock_send_email, mock_save_data):
+    def test_collect_news_creates_articles(self, mock_send_email):
         now = timezone.now()
 
         dummy_article = NewArticle(
@@ -82,4 +81,3 @@ class CollectNewsCommandTestCase(TestCase):
         self.assertEqual(created_article.source, "Dummy Source")
         self.assertEqual(created_article.category, "Dummy")
         mock_send_email.assert_called_once()
-        mock_save_data.assert_called_once()

@@ -1,9 +1,19 @@
 import time
 import datetime
+import re
+import random
+from urllib.parse import urljoin
+
 import requests
-import numpy as np
 from scripts.support import logger
 from bs4 import BeautifulSoup
+
+DEFAULT_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:148.0) Gecko/20100101 Firefox/148.0"
+RECENT_POSTINGS_URL = "https://www.aila.org/recent-postings"
+RECENT_POSTINGS_LABEL = "Daily Immigration News Clips"
+RECENT_POSTINGS_DATE = re.compile(
+    rf"{RECENT_POSTINGS_LABEL}\s*[-–—]\s*(?P<date>[A-Za-z]+\s+\d{{1,2}},\s*\d{{4}})",
+)
 
 def date_convert(time_str:str)->datetime:
     dateOb = datetime.datetime.strptime(time_str, "%a, %d %b %Y %H:%M:%S %Z")
@@ -82,6 +92,56 @@ def get_articles(result:BeautifulSoup, cat:str, source:str, NewArticle)->list:
     
     return articles
 
+def _parse_postings_date(text: str) -> datetime.date | None:
+    match = RECENT_POSTINGS_DATE.search(text)
+    if not match:
+        return None
+    date_text = match.group("date")
+    try:
+        return datetime.datetime.strptime(date_text, "%B %d, %Y").date()
+    except ValueError:
+        return None
+
+
+def _resolve_latest_daily_news_link() -> str | None:
+    headers = {"User-Agent": DEFAULT_USER_AGENT}
+    try:
+        response = requests.get(RECENT_POSTINGS_URL, headers=headers, timeout=10)
+        response.raise_for_status()
+    except Exception as exc:
+        logger.warning(f"Unable to read recent postings for AILA: {exc}")
+        return None
+
+    soup = BeautifulSoup(response.text, features="html.parser")
+    anchors = soup.find_all("a", string=lambda text: RECENT_POSTINGS_LABEL in (text or ""))
+    candidates: list[tuple[datetime.date | None, str]] = []
+    for anchor in anchors:
+        href = anchor.get("href")
+        if not href:
+            continue
+        url = urljoin(RECENT_POSTINGS_URL, href)
+        date = _parse_postings_date(anchor.get_text(" ", strip=True))
+        candidates.append((date, url))
+
+    if not candidates:
+        logger.warning("Daily Immigration News Clips link not found on recent postings.")
+        return None
+
+    best_date = None
+    best_url = None
+    for parsed_date, url in candidates:
+        if best_url is None:
+            best_url = url
+            best_date = parsed_date
+            continue
+        if parsed_date and (best_date is None or parsed_date > best_date):
+            best_url = url
+            best_date = parsed_date
+
+    logger.debug(f"Resolved latest Daily Immigration News link: {best_url}")
+    return best_url
+
+
 def ingest_xml(cat:str, source:str, NewArticle)->list:
     """[Outer scraping function to set up request pulls]
 
@@ -99,40 +159,49 @@ def ingest_xml(cat:str, source:str, NewArticle)->list:
     if weekend:
         logger.info("AILA only posts on weekdays. No soup for you!")
         return None
-    
+
     month = dt.strftime("%B").lower()
     year = dt.year
-    feeds = {
-        "AILA Daily News Update":f"https://www.aila.org/library/daily-immigration-news-clips-{month}-{day}-{year}",
-        #"Aaila Blog"           :f"https://www.aila.org/library/daily-immigration-news-clips-march-6-2025",
-    }
-    # 
+    fallback_url = f"https://www.aila.org/library/daily-immigration-news-clips-{month}-{day}-{year}"
+    resolved_url = _resolve_latest_daily_news_link()
+    url_candidates = []
+    if resolved_url:
+        url_candidates.append(resolved_url)
+    if fallback_url not in url_candidates:
+        url_candidates.append(fallback_url)
 
     new_articles = []
-    url = feeds.get(cat)
-    chrome_version = np.random.randint(120, 132)
-    headers = {
-        'Upgrade-Insecure-Requests': '1',
-        'User-Agent': f'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version}.0.0.0 Mobile Safari/537.36',
-        'sec-ch-ua': f'"Not)A;Brand";v="99", "Google Chrome";v={chrome_version}, "Chromium";v={chrome_version}',
-        'sec-ch-ua-mobile': '?1',
-        'sec-ch-ua-platform': '"Android"',
-        'referer': url,
-        'origin':source,
-        'Content-Type': 'text/html,application/xhtml+xml,application/xml'
-    }
-    try:
-        response = requests.get(url, headers=headers)
-    
-        if response.status_code != 200:
-            logger.warning(f'Status code: {response.status_code}')
-            logger.warning(f'Reason: {response.reason}')
-            logger.warning(f"Daily news not up yet for {source}.  Check again later")
-            return None
-    except Exception as e:            
-        logger.warning(f"Error {e}")
+    response = None
+    fetched_url = None
+    for candidate in url_candidates:
+        chrome_version = random.randint(120, 132)
+        headers = {
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': f'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version}.0.0.0 Mobile Safari/537.36',
+            'sec-ch-ua': f'"Not)A;Brand";v="99", "Google Chrome";v={chrome_version}, "Chromium";v={chrome_version}',
+            'sec-ch-ua-mobile': '?1',
+            'sec-ch-ua-platform': '"Android"',
+            'referer': candidate,
+            'origin': source,
+            'Content-Type': 'text/html,application/xhtml+xml,application/xml'
+        }
+        try:
+            response = requests.get(candidate, headers=headers, timeout=10)
+        except Exception as exc:
+            logger.warning(f"Error fetching {candidate}: {exc}")
+            response = None
+        if not response:
+            continue
+        if response.status_code == 200:
+            fetched_url = candidate
+            break
+        logger.warning(f'Status code: {response.status_code} fetching {candidate}')
+        logger.warning(f'Reason: {response.reason}')
+
+    if not response or response.status_code != 200:
+        logger.warning(f"Daily news not up yet for {source}.  Check again later")
         return None
-        
+
     #Parse the XML
     bs4ob = BeautifulSoup(response.text, features="lxml")
 
