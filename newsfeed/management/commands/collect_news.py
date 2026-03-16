@@ -234,5 +234,8 @@ class Command(BaseCommand):
             return None
 
         if timezone.is_naive(dt):
-            return timezone.make_aware(dt, timezone.get_default_timezone())
+            dt = timezone.make_aware(dt, timezone.get_default_timezone())
+        now = timezone.now()
+        if dt > now:
+            return now
         return dt

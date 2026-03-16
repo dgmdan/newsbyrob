@@ -104,3 +104,6 @@ $ python manage.py test newsfeed
 ```
 
 If you ever add tests elsewhere, just point the command at that app (e.g., `python manage.py test newsfeed.models`). The command uses the same SQLite settings, so it works inside your activated virtualenv.
+
+## Maintenance helpers
+- `python manage.py fix_future_pub_dates [--limit N]` revisits any `Article` records where `pub_date` is still ahead of the current time, scrapes the original link for a corrected published timestamp, and rewrites the stored date (falling back to the run time when the scrape fails).
