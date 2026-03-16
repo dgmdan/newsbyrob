@@ -19,6 +19,7 @@ dependencies = [
     "Django (>=5.2.7,<6.0.0)",
     "psycopg[binary] (>=3.3.3,<4.0.0)",
     "gunicorn (>=21.2.0,<22.0.0)",
+    "whitenoise (>=6.12.0,<7.0.0)",
 ]
 
 

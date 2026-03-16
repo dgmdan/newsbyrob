@@ -21,3 +21,4 @@ urllib3==2.6.2
 Django==5.2.7
 psycopg[binary]==3.3.3
 gunicorn==21.2.0
+whitenoise==6.12.0
