@@ -1,5 +1,3 @@
-import re
-
 from django.db.models import Count, Q
 from django.views.generic import ListView
 
@@ -20,9 +18,8 @@ class ArticleListView(ListView):
 
         search_query = self.request.GET.get("q", "").strip()
         if search_query:
-            pattern = rf"\b{re.escape(search_query)}\b"
             queryset = queryset.filter(
-                Q(title__iregex=pattern) | Q(description__iregex=pattern)
+                Q(title__icontains=search_query) | Q(description__icontains=search_query)
             )
 
         return queryset.prefetch_related("tags")
