@@ -1,4 +1,6 @@
-from django.db.models import Count
+import re
+
+from django.db.models import Count, Q
 from django.views.generic import ListView
 
 from .models import Article, Tag
@@ -15,6 +17,14 @@ class ArticleListView(ListView):
         tag_slug = self.request.GET.get("tag")
         if tag_slug:
             queryset = queryset.filter(tags__slug=tag_slug)
+
+        search_query = self.request.GET.get("q", "").strip()
+        if search_query:
+            pattern = rf"\b{re.escape(search_query)}\b"
+            queryset = queryset.filter(
+                Q(title__iregex=pattern) | Q(description__iregex=pattern)
+            )
+
         return queryset.prefetch_related("tags")
 
     def get_context_data(self, **kwargs):
@@ -25,4 +35,5 @@ class ArticleListView(ListView):
             .order_by("name")
         )
         context["active_tag"] = self.request.GET.get("tag")
+        context["search_query"] = self.request.GET.get("q", "").strip()
         return context

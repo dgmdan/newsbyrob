@@ -3,13 +3,30 @@
 
 {% block content %}
     <section>
+        <form method="get" class="search-bar" role="search">
+            <label for="search-input">Search</label>
+            <input
+                id="search-input"
+                name="q"
+                type="search"
+                placeholder="Exact word or phrase"
+                value="{{ search_query }}"
+            />
+            {% if active_tag %}
+                <input type="hidden" name="tag" value="{{ active_tag }}" />
+            {% endif %}
+            <button type="submit">Find</button>
+        </form>
         <div class="filter-bar">
             <span>Filter tags:</span>
             <a href="{% url 'newsfeed:article_list' %}" class="{% if not active_tag %}active{% endif %}">All</a>
             {% for tag in tags %}
-                <a href="?tag={{ tag.slug }}" class="{% if tag.slug == active_tag %}active{% endif %}">{{ tag.name }}</a>
+                <a href="?tag={{ tag.slug }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="{% if tag.slug == active_tag %}active{% endif %}">{{ tag.name }}</a>
             {% endfor %}
         </div>
+        {% if search_query %}
+            <p class="search-summary">Matching "{{ search_query }}"</p>
+        {% endif %}
         {% if articles %}
             <div class="article-grid">
                 {% for article in articles %}
@@ -57,6 +74,33 @@
             gap: 0.75rem;
             margin-bottom: 1rem;
             font-size: 0.95rem;
+        }
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .search-bar input {
+            flex: 1;
+            min-width: 180px;
+            border: 1px solid #cbd5f5;
+            padding: 0.4rem 0.6rem;
+            border-radius: 999px;
+        }
+        .search-bar button {
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            border: none;
+            background: #0f172a;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .search-summary {
+            margin: 0 0 0.5rem;
+            font-size: 0.9rem;
+            color: #475569;
         }
         .filter-bar a {
             text-decoration: none;
