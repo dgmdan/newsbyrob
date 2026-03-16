@@ -57,7 +57,7 @@ def _postgres_database_config():
     }
 
 
-DEFAULT_ALLOWED_HOSTS = ['newsbyrob.com', 'newsbyrob-prod2-wjmw9.ondigitalocean.app']
+DEFAULT_ALLOWED_HOSTS = ['newsbyrob.com', 'www.newsbyrob.com', 'newsbyrob-prod2-wjmw9.ondigitalocean.app']
 
 
 def _allowed_hosts():
