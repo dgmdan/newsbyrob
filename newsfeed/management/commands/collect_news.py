@@ -31,16 +31,16 @@ class Command(BaseCommand):
         with transaction.atomic():
             for site_name, (base_url, module) in SITES.items():
                 categories = CATEGORIES.get(site_name, [])
-                for category in categories:
-                    try:
-                        feed_items = module.ingest_xml(category, base_url, NewArticle)
-                    except Exception as exc:  # defensive guard
-                        logger.warning(f"Feed {site_name}:{category} failed: {exc}")
-                        continue
-                    if not feed_items:
-                        continue
-                    for feed_item in feed_items:
-                        article, created = self._save_article(feed_item, site_name, category, base_url)
+            for category in categories:
+                try:
+                    feed_items = module.ingest_xml(category, base_url, NewArticle)
+                except Exception as exc:  # defensive guard
+                    logger.warning(f"Feed {site_name}:{category} failed: {exc}")
+                    continue
+                if not feed_items:
+                    continue
+                for feed_item in feed_items:
+                    article, created = self._save_article(feed_item, site_name, category, base_url)
                         if not article:
                             continue
                         if created:
