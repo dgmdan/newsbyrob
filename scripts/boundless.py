@@ -1,5 +1,7 @@
 import time
 import datetime
+from urllib.parse import urljoin
+
 from scripts.support import logger
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
@@ -54,8 +56,9 @@ def get_articles(result:BeautifulSoup, cat:str, source:str, NewArticle)->list:
         #grab the title
         article.title = child.find("div", class_="heading-style-h7-2").text.strip()
         
-        #grab the url
-        article.link = child.find("a").get("href", default_val)
+        # grab the url and resolve relative paths against the source domain
+        raw_link = child.find("a").get("href", default_val)
+        article.link = urljoin(source, raw_link) if raw_link else default_val
 
         article.description = child.find("div", class_="text-size-body3-4 text-style-2lines").text.strip()
         
