@@ -53,6 +53,7 @@ The scraper still relies on Gmail SMTP and the same `support.send_email_update` 
 - Override `ALLOWED_HOSTS` (comma separated) when your production hostnames differ from `localhost`.
 - On DigitalOcean Managed Postgres instances, run `GRANT ALL PRIVILEGES ON SCHEMA public TO <your role>;` (substituting the username in `DATABASE_URL`) before running migrations so the role can create tables. If you ever recreate the DB, rerun the grant before your next deploy.
 - If you want the scraper to run daily on App Platform, add a scheduled Job component that runs `python manage.py collect_news` with cron `0 20 * * *` (set the job timezone to America/New_York for 4 PM Eastern) and share the same secrets as the web service.
+- Production deployments also rely on `python manage.py collectstatic` to copy static assets into `STATIC_ROOT`, and WhiteNoise serves that bundle without a proxy like S3 or Cloudflare. Do **not** set `DISABLE_COLLECTSTATIC=1` on Heroku/App Platform so the release script can collect the favicon and other static files WhiteNoise exposes.
 
 ## Running the scraper and web UI
 1. Let Django prepare the SQLite schema:
