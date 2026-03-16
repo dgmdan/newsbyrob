@@ -16,7 +16,7 @@ class Command(BaseCommand):
         allowed_hosts = {base_netloc, base_netloc.removeprefix("www.")}
 
         boundless_articles = (
-            Article.objects.filter(site="Boundless")
+            Article.objects.filter(site__icontains="boundless")
             .exclude(link__isnull=True)
             .exclude(link__exact="")
         )
