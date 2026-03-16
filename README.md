@@ -52,6 +52,7 @@ The scraper still relies on Gmail SMTP and the same `support.send_email_update` 
 - Set `DJANGO_ENV=production` in hosted deployments along with a Postgres URI stored in `DATABASE_URL` (for example `postgresql://user:pass@db.example.com:5432/newsbyrob`). The settings loader requires `DATABASE_URL` and validates that it includes a database name.
 - Override `ALLOWED_HOSTS` (comma separated) when your production hostnames differ from `localhost`.
 - On DigitalOcean Managed Postgres instances, run `GRANT ALL PRIVILEGES ON SCHEMA public TO <your role>;` (substituting the username in `DATABASE_URL`) before running migrations so the role can create tables. If you ever recreate the DB, rerun the grant before your next deploy.
+- If you want the scraper to run daily on App Platform, add a scheduled Job component that runs `python manage.py collect_news` with cron `0 20 * * *` (set the job timezone to America/New_York for 4 PM Eastern) and share the same secrets as the web service.
 
 ## Running the scraper and web UI
 1. Let Django prepare the SQLite schema:
