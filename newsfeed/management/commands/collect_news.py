@@ -16,6 +16,10 @@ from scripts.support import logger, save_data, send_email_update, urlformat
 
 TAG_SPLIT_RE = re.compile(r"[;,|]")
 
+SITE_TAG_ALIASES = {
+    "https://www.ice.gov": ["ICE"],
+}
+
 
 class Command(BaseCommand):
     help = "Scrape the configured immigration RSS feeds, store new articles, and email the report."
@@ -27,16 +31,16 @@ class Command(BaseCommand):
         with transaction.atomic():
             for site_name, (base_url, module) in SITES.items():
                 categories = CATEGORIES.get(site_name, [])
-                for category in categories:
-                    try:
-                        feed_items = module.ingest_xml(category, base_url, NewArticle)
-                    except Exception as exc:  # defensive guard
-                        logger.warning(f"Feed {site_name}:{category} failed: {exc}")
-                        continue
-                    if not feed_items:
-                        continue
-                    for feed_item in feed_items:
-                        article, created = self._save_article(feed_item, site_name, category)
+            for category in categories:
+                try:
+                    feed_items = module.ingest_xml(category, base_url, NewArticle)
+                except Exception as exc:  # defensive guard
+                    logger.warning(f"Feed {site_name}:{category} failed: {exc}")
+                    continue
+                if not feed_items:
+                    continue
+                for feed_item in feed_items:
+                    article, created = self._save_article(feed_item, site_name, category, base_url)
                         if not article:
                             continue
                         if created:
@@ -58,7 +62,7 @@ class Command(BaseCommand):
             logger.info("No new articles found.")
             self.stdout.write("No new articles to report.")
 
-    def _save_article(self, feed_item: NewArticle, site_name: str, category: str):
+    def _save_article(self, feed_item: NewArticle, site_name: str, category: str, base_url: str):
         external_id = feed_item.id or feed_item.link or feed_item.title
         if not external_id:
             logger.warning("Skipping article without an identifier.")
@@ -89,6 +93,9 @@ class Command(BaseCommand):
         )
 
         tag_names = {site_name, defaults["category"]}
+        alias_names = SITE_TAG_ALIASES.get(base_url)
+        if alias_names:
+            tag_names.update(alias_names)
         if feed_item.keyword:
             tag_names.update({part.strip() for part in TAG_SPLIT_RE.split(feed_item.keyword)})
         tag_names = {name.strip() for name in tag_names if name and name.strip()}
