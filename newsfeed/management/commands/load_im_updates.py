@@ -29,6 +29,17 @@ def _parse_datetime(value: str | None) -> datetime.datetime | None:
     return candidate
 
 
+def _truncate_for_field(field_name: str, raw_value: str | None) -> str:
+    if not raw_value:
+        return ""
+    field = Article._meta.get_field(field_name)
+    max_length = getattr(field, "max_length", None)
+    text = str(raw_value)
+    if max_length and len(text) > max_length:
+        return text[:max_length]
+    return text
+
+
 class Command(BaseCommand):
     help = "Load the existing JSON data dump into the database; usable in any environment."
 
@@ -37,33 +48,31 @@ class Command(BaseCommand):
         if not data_file.exists():
             raise CommandError("data/im_updates.json is missing; run the scraper first.")
 
-        with data_file.open() as handle:
-            raw = json.load(handle)
-
-        created = 0
-        updated = 0
-
         with transaction.atomic():
+            raw = json.load(data_file.open())
+            created = 0
+            updated = 0
+
             for external_id, payload in raw.items():
                 article_defaults = {
-                    "title": payload.get("title") or "",
-                    "link": payload.get("link") or "",
+                    "title": _truncate_for_field("title", payload.get("title")),
+                    "link": _truncate_for_field("link", payload.get("link")),
                     "description": payload.get("description") or "",
-                    "category": payload.get("category") or "",
-                    "site": payload.get("source") or "",
-                    "source": payload.get("source") or "",
-                    "creator": payload.get("creator") or "",
-                    "author": payload.get("author") or "",
-                    "country": payload.get("country") or "",
-                    "identifier": payload.get("identifier") or "",
-                    "keyword": payload.get("keyword") or "",
-                    "threat_level": payload.get("threat_level") or "",
+                    "category": _truncate_for_field("category", payload.get("category")),
+                    "site": _truncate_for_field("site", payload.get("source")),
+                    "source": _truncate_for_field("source", payload.get("source")),
+                    "creator": _truncate_for_field("creator", payload.get("creator")),
+                    "author": _truncate_for_field("author", payload.get("author")),
+                    "country": _truncate_for_field("country", payload.get("country")),
+                    "identifier": _truncate_for_field("identifier", payload.get("identifier")),
+                    "keyword": _truncate_for_field("keyword", payload.get("keyword")),
+                    "threat_level": _truncate_for_field("threat_level", payload.get("threat_level")),
                     "pub_date": _parse_datetime(payload.get("pub_date")),
                     "pull_date": _parse_datetime(payload.get("pull_date")),
                 }
 
                 article, created_flag = Article.objects.update_or_create(
-                    external_id=external_id,
+                    external_id=_truncate_for_field("external_id", external_id),
                     defaults=article_defaults,
                 )
 
