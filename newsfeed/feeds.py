@@ -1,10 +1,16 @@
 from django.contrib.syndication.views import Feed
 from django.urls import reverse
+from django.utils.feedgenerator import Rss201rev2Feed
 
 from .models import Article
 
 
+class TextXmlRssFeed(Rss201rev2Feed):
+    content_type = "text/xml"
+
+
 class LatestArticlesFeed(Feed):
+    feed_type = TextXmlRssFeed
     title = "News by Rob aggregated immigration news"
     link = "/"
     description = "Latest immigration articles collected across government and advocacy sources."
