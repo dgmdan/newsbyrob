@@ -36,7 +36,7 @@
                             <p class="meta-row">
                                 <span>{{ article.site }}</span>
                                 {% if article.category %} | <span>{{ article.category }}</span>{% endif %}
-                                {% if article.pub_date %} | <span>{{ article.pub_date|date:"M d, Y H:i" }}</span>{% endif %}
+                                {% if article.pub_date %} | <span>{{ article.pub_date|date:"M d, Y" }}</span>{% endif %}
                             </p>
                         </header>
                         {% if article.description %}
@@ -60,6 +60,9 @@
                     <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
                     {% if page_obj.has_next %}
                         <a href="?page={{ page_obj.next_page_number }}{% if active_tag %}&tag={{ active_tag }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">Next →</a>
+                    {% endif %}
+                    {% if page_obj.paginator.num_pages > 1 and page_obj.number != page_obj.paginator.num_pages %}
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if active_tag %}&tag={{ active_tag }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">Last →</a>
                     {% endif %}
                 </nav>
             {% endif %}
