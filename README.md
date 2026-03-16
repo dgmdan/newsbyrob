@@ -51,6 +51,7 @@ The scraper still relies on Gmail SMTP and the same `support.send_email_update` 
 - `DJANGO_ENV` defaults to `development` and keeps the app running against `db.sqlite3` inside the project root.
 - Set `DJANGO_ENV=production` in hosted deployments along with a Postgres URI stored in `DATABASE_URL` (for example `postgresql://user:pass@db.example.com:5432/newsbyrob`). The settings loader requires `DATABASE_URL` and validates that it includes a database name.
 - Override `ALLOWED_HOSTS` (comma separated) when your production hostnames differ from `localhost`.
+- On DigitalOcean Managed Postgres instances, run `GRANT ALL PRIVILEGES ON SCHEMA public TO <your role>;` (substituting the username in `DATABASE_URL`) before running migrations so the role can create tables. If you ever recreate the DB, rerun the grant before your next deploy.
 
 ## Running the scraper and web UI
 1. Let Django prepare the SQLite schema:
