@@ -71,6 +71,7 @@ The scraper still relies on Gmail SMTP and the same `support.send_email_update` 
    ```
 4. Visit `http://127.0.0.1:8000/` to browse collected articles. Use the tag filters at the top of the page to narrow results, and click any headline to jump to the original story. The UI is backed by tags derived from the original category names and keywords, so you can also filter on sites or curated terms.
 5. Use the new search box alongside the filters to look for an exact word or phrase inside article titles and summaries; the search prefers whole-word (or whole-phrase) matches and keeps the current tag filter in place.
+6. An RSS feed of the 50 most recent articles is available at `/feed/`; subscribe with any reader to receive the aggregated immigration news updates.
 
 Want to manage the records via the admin? Create a superuser (if you haven’t already):
 
