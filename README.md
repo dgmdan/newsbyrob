@@ -64,6 +64,11 @@ The scraper still relies on Gmail SMTP and the same `support.send_email_update` 
    $ python manage.py collect_news
    ```
    This command reuses the RSS/Playwright modules under `scripts/`, stores every item in `db.sqlite3`, updates `data/im_updates.json`, and keeps sending the same emails you got before.
+- As a one-time utility during development, load the historical records without running the scraper:
+  ```bash
+  $ python manage.py load_im_updates
+  ```
+  This command reads `data/im_updates.json` and upserts every entry (along with tags) so you can browse past articles offline.
 3. Start the development server:
    ```bash
    $ python manage.py runserver
