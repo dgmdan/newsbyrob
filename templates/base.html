@@ -1,9 +1,11 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>U.S. Immigration Law News by Rob</title>
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
     {% if GA_ACCOUNT %}
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_ACCOUNT }}"></script>
     <script>
