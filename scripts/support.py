@@ -5,7 +5,6 @@ import shutil
 import datetime
 import numpy as np
 import json
-from os.path import exists
 import logging
 
 #Progress bar fun
@@ -19,7 +18,7 @@ from rich.progress import (
 )
 from rich.logging import RichHandler
 from rich.console import Console
-from pathlib import Path, PurePath
+from pathlib import Path
 
 ################################# Emailing Funcs ####################################
 
@@ -160,6 +159,7 @@ def get_file_handler(log_dir:Path)->logging.FileHandler:
     Returns:
         filehandler(handler): This will handle the logger's format and file management
     """	
+    log_dir.parent.mkdir(parents=True, exist_ok=True)
     log_format = "%(asctime)s|%(levelname)-8s|%(lineno)-3d|%(funcName)-14s|%(message)s|" 
     file_handler = logging.FileHandler(log_dir)
     file_handler.setFormatter(logging.Formatter(log_format, "%m-%d-%Y %H:%M:%S"))
@@ -217,20 +217,15 @@ def move_log():
     ts = datetime.datetime.strptime(start_time, "%m-%d-%Y_%H-%M-%S")
     year = ts.year
     month = ts.month
-    destination_path = PurePath(
-        Path(f"./data/logs"),
-        Path(f"{year}"),
-        Path(f"{month}")
-    )
-    if not exists(destination_path):
-        os.makedirs(destination_path)
+    destination_path = Path("data", "logs", str(year), str(month))
+    destination_path.mkdir(parents=True, exist_ok=True)
     shutil.move(log_dir, destination_path)
 
 
 ################################# Global Vars ####################################
 start_time = get_time().strftime("%m-%d-%Y_%H-%M-%S")
 console = Console(color_system="auto", stderr=True, width=200)
-log_dir = PurePath(Path.cwd(), Path(f'./data/logs/{start_time}.log'))
+log_dir = Path.cwd() / "data" / "logs" / f"{start_time}.log"
 logger = get_logger(log_dir=log_dir, console=console)
 chrome_version = np.random.randint(130, 142)
 
