@@ -5,6 +5,7 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 
+from newsfeed.management.commands.collect_news import normalize_external_id
 from newsfeed.models import Article, Tag
 from scripts.feed_config import NewArticle
 
@@ -80,4 +81,41 @@ class CollectNewsCommandTestCase(TestCase):
         self.assertEqual(created_article.title, "Dummy title")
         self.assertEqual(created_article.source, "Dummy Source")
         self.assertEqual(created_article.category, "Dummy")
+        mock_send_email.assert_called_once()
+
+    @patch("newsfeed.management.commands.collect_news.send_email_update", return_value=False)
+    def test_collect_news_normalizes_long_external_id(self, mock_send_email):
+        now = timezone.now()
+        long_id = "x" * 1024
+
+        dummy_article = NewArticle(
+            id=long_id,
+            title="Dummy title",
+            link="https://example.com/dummy",
+            description="<p>Dummy description</p>",
+            pub_date=now,
+            pull_date=now,
+            category="Dummy",
+            source="Dummy Source",
+        )
+
+        class DummyModule:
+            def ingest_xml(self, cat, source, NewArticleClass):
+                return [dummy_article]
+
+        with patch(
+            "newsfeed.management.commands.collect_news.SITES",
+            {"Dummy Site": ("https://example.com", DummyModule())},
+        ), patch(
+            "newsfeed.management.commands.collect_news.CATEGORIES",
+            {"Dummy Site": ["Dummy"]},
+        ):
+            call_command("collect_news")
+
+        expected_external_id = normalize_external_id(long_id)
+        self.assertTrue(Article.objects.filter(external_id=expected_external_id).exists())
+        created_article = Article.objects.get(external_id=expected_external_id)
+        max_length = Article._meta.get_field("external_id").max_length
+        self.assertLessEqual(len(created_article.external_id), max_length)
+        self.assertEqual(created_article.external_id, expected_external_id)
         mock_send_email.assert_called_once()

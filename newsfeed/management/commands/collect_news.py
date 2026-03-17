@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 import html
 import re
 
@@ -16,6 +17,22 @@ from scripts.support import logger, send_email_update, urlformat
 
 TAG_SPLIT_RE = re.compile(r"[;,|]")
 UNINFORMATIVE_SECTION_LABELS = {"national", "local", "regional", "international"}
+MAX_EXTERNAL_ID_LENGTH = Article._meta.get_field("external_id").max_length
+
+
+def normalize_external_id(value: str | None) -> str:
+    if not value:
+        return ""
+    normalized = value.strip()
+    if len(normalized) <= MAX_EXTERNAL_ID_LENGTH:
+        return normalized
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    logger.debug(
+        "External ID normalized from %d characters to %d characters via sha256 digest.",
+        len(normalized),
+        len(digest),
+    )
+    return digest[:MAX_EXTERNAL_ID_LENGTH]
 
 
 class Command(BaseCommand):
@@ -86,7 +103,8 @@ class Command(BaseCommand):
             self.stdout.write("No new articles to report.")
 
     def _save_article(self, feed_item: NewArticle, site_name: str, category: str):
-        external_id = feed_item.id or feed_item.link or feed_item.title
+        raw_external_id = feed_item.id or feed_item.link or feed_item.title
+        external_id = normalize_external_id(raw_external_id)
         if not external_id:
             logger.warning("Skipping article without an identifier.")
             return None, False
