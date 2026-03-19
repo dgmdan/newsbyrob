@@ -5,8 +5,10 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 
+from bs4 import BeautifulSoup
 from newsfeed.management.commands.collect_news import normalize_external_id
 from newsfeed.models import Article, Tag
+from scripts.aila import get_articles
 from scripts.feed_config import NewArticle
 
 
@@ -119,3 +121,29 @@ class CollectNewsCommandTestCase(TestCase):
         self.assertLessEqual(len(created_article.external_id), max_length)
         self.assertEqual(created_article.external_id, expected_external_id)
         mock_send_email.assert_called_once()
+
+
+class AilaScraperTestCase(TestCase):
+    def test_description_prefers_article_text_over_section_label(self):
+        html = """
+        <div class="typography text rte">
+            <h2><em>National</em></h2>
+            <p>
+                <em>NPR</em>
+                <a href="https://www.npr.org/article">ICE's detention expansion meets resistance</a>
+                <br/>
+                By Jasmine Garsd
+            </p>
+        </div>
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        articles = get_articles(
+            soup.find("div", class_="typography text rte"),
+            "AILA Daily News Update",
+            "https://www.aila.org",
+            NewArticle,
+        )
+        self.assertEqual(len(articles), 1)
+        article = articles[0]
+        self.assertEqual(article.description, "ICE's detention expansion meets resistance")
+        self.assertNotEqual(article.description.lower(), "national")

@@ -34,6 +34,7 @@ def get_articles(result:BeautifulSoup, cat:str, source:str, NewArticle)->list:
 
     articles = []
     default_val = None
+    section_label = ""
 
     #BUG - So.... This time they decided to next multiple articles underneath a p tag????
         #Not sure if that was a mistake as i've never seen them do that.  
@@ -42,13 +43,23 @@ def get_articles(result:BeautifulSoup, cat:str, source:str, NewArticle)->list:
         
     #Set the outer loop over each card returned. 
     for child in result.contents:
+        if not getattr(child, "name", None):
+            continue
+        tag_name = child.name.lower() if child.name else ""
+        if tag_name.startswith("h"):
+            header_text = ""
+            em_tag = child.find("em")
+            if em_tag:
+                header_text = em_tag.get_text(" ", strip=True)
+            else:
+                header_text = child.get_text(" ", strip=True)
+            if header_text:
+                section_label = header_text
+            continue
+        if not child.get_text(strip=True):
+            continue
+
         article = NewArticle()
-        #Description not available.  Putting regional info here
-        if child.name == "h2" or child.name == "h3" or child.name == "h4":
-            descript = child.find("em").text
-            continue
-        if not child.name or child.text == "\xa0":
-            continue
 
         # Time of pull
         article.pull_date = time.strftime("%m-%d-%Y_%H-%M-%S")
@@ -70,17 +81,23 @@ def get_articles(result:BeautifulSoup, cat:str, source:str, NewArticle)->list:
         # Assign source
         article.source = source
 
-        #Put section in description
-        article.description = descript
+        description_text = child.get_text(" ", strip=True)
+        creator_text = article.creator or ""
+        if creator_text and description_text.lower().startswith(creator_text.lower()):
+            description_text = description_text[len(creator_text) :].strip()
+        by_match = re.search(r"\bBy\b\s+.*$", description_text)
+        if by_match:
+            description_text = description_text[: by_match.start()].strip()
+        article.description = description_text or section_label
 
-        #grab the title
-        if child.find("a"):
-            article.title = article.description + " - " + article.creator + " - " + child.find("a").text
-        else:
+        anchor = child.find("a")
+        if not anchor:
             logger.warning("No title found on article")
             continue
-        #grab the url
-        article.link = child.find("a").get("href", default_val)
+        title_text = anchor.get_text(" ", strip=True)
+        title_parts = [part for part in (section_label, article.creator, title_text) if part]
+        article.title = " - ".join(title_parts)
+        article.link = anchor.get("href", default_val)
         
         #assign id
         article.id = article.link
