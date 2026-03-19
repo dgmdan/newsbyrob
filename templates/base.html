@@ -48,6 +48,12 @@
             color: inherit;
             text-decoration: none;
         }
+        .header-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
         .rss-link {
             display: inline-flex;
             align-items: center;
@@ -84,10 +90,15 @@
             <h1><a href="{% url 'newsfeed:article_list' %}">U.S. Immigration Law News by Rob</a></h1>
             <p>Curated immigration news from the sources Rob trusted.</p>
         </div>
-        <a class="rss-link" href="{% url 'newsfeed:feed' %}">
-            <img src="{% static 'rss-logo.png' %}" alt="RSS logo">
-            RSS Feed
-        </a>
+        <div class="header-actions">
+            <a class="rss-link" href="{% url 'newsfeed:feed' %}">
+                <img src="{% static 'rss-logo.png' %}" alt="RSS logo">
+                RSS Feed
+            </a>
+            <a class="rss-link" href="https://github.com/dgmdan/newsbyrob" target="_blank" rel="noopener noreferrer">
+                GitHub
+            </a>
+        </div>
     </header>
     <main>
         {% block content %}{% endblock %}
