@@ -32,7 +32,7 @@
                 {% for article in articles %}
                     <article class="story">
                         <header>
-                            <h2><a href="{{ article.link }}" target="_blank" rel="noreferrer">{{ article.title|default:"Untitled"|striptags }}</a></h2>
+                            <h2><a href="{{ article.link }}" target="_blank" rel="noreferrer noopener">{{ article.title|default:"Untitled"|striptags }}</a></h2>
                             <p class="meta-row">
                                 <span>{{ article.site }}</span>
                                 {% if article.category %} | <span>{{ article.category }}</span>{% endif %}

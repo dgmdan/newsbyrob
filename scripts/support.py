@@ -47,7 +47,7 @@ def urlformat(urls: list) -> str:
                 links_html += "</ol>\n" + "-" * 45 + "\n" 
             links_html += f"<br><i><b>{site} - {cat}</b></i>\n<ol>"
             prev_site_cat = current_site_cat
-        links_html += f"<li><a href='{link}'>{title}</a></li>"
+        links_html += f"<li><a href='{link}' rel='noreferrer noopener'>{title}</a></li>"
 
     links_html += "</ol>" # close the final list.
     return links_html
