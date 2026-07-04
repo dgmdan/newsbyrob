@@ -161,6 +161,40 @@ class CollectNewsCommandTestCase(TestCase):
         )
         mock_send_email.assert_called_once()
 
+    @patch("newsfeed.management.commands.collect_news.send_email_update", return_value=False)
+    @patch("newsfeed.management.commands.collect_news.resolve_final_url")
+    def test_collect_news_keeps_gov_links_without_resolving(self, mock_resolve, mock_send_email):
+        now = timezone.now()
+
+        dummy_article = NewArticle(
+            id="dummy-gov-1",
+            title="Gov title",
+            link="https://www.congress.gov/bill/119th-congress/house-bill/1",
+            description="<p>Dummy description</p>",
+            pub_date=now,
+            pull_date=now,
+            category="Dummy",
+            source="Dummy Source",
+        )
+
+        class DummyModule:
+            def ingest_xml(self, cat, source, NewArticleClass):
+                return [dummy_article]
+
+        with patch(
+            "newsfeed.management.commands.collect_news.SITES",
+            {"Dummy Site": ("https://example.com", DummyModule())},
+        ), patch(
+            "newsfeed.management.commands.collect_news.CATEGORIES",
+            {"Dummy Site": ["Dummy"]},
+        ):
+            call_command("collect_news")
+
+        created_article = Article.objects.get(external_id="dummy-gov-1")
+        self.assertEqual(created_article.link, "https://www.congress.gov/bill/119th-congress/house-bill/1")
+        mock_resolve.assert_not_called()
+        mock_send_email.assert_called_once()
+
 
 class UrlResolverTestCase(TestCase):
     @patch("newsfeed.url_resolver.requests.get")
@@ -226,6 +260,25 @@ class BackfillLinksCommandTestCase(TestCase):
         self.assertEqual(article1.link, "https://www.politico.com/a1")
         self.assertEqual(article2.link, "https://www.politico.com/a2")
         self.assertEqual(mock_sleep.call_count, 2)
+
+    @patch("newsfeed.management.commands.backfill_final_links.time.sleep")
+    @patch("newsfeed.management.commands.backfill_final_links.resolve_final_url")
+    def test_backfill_skips_gov_links_without_resolving(self, mock_resolve, mock_sleep):
+        article = Article.objects.create(
+            external_id="a4",
+            title="A4",
+            link="https://www.congress.gov/bill/119th-congress/house-bill/1",
+        )
+
+        call_command("backfill_final_links", delay=0.25)
+
+        article.refresh_from_db()
+        self.assertEqual(
+            article.link,
+            "https://www.congress.gov/bill/119th-congress/house-bill/1",
+        )
+        mock_resolve.assert_not_called()
+        self.assertEqual(mock_sleep.call_count, 1)
 
     @patch("newsfeed.management.commands.backfill_final_links.time.sleep")
     @patch("newsfeed.management.commands.backfill_final_links.resolve_final_url")

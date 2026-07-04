@@ -1,10 +1,19 @@
 import time
+from urllib.parse import urlparse
 
 from django.core.management.base import BaseCommand
 
 from newsfeed.models import Article
 from newsfeed.url_resolver import resolve_final_url
 from scripts.support import logger
+
+
+def is_gov_url(url: str | None) -> bool:
+    if not url:
+        return False
+    parsed = urlparse(url.strip())
+    hostname = (parsed.hostname or "").lower()
+    return hostname.endswith(".gov")
 
 
 class Command(BaseCommand):
@@ -26,6 +35,12 @@ class Command(BaseCommand):
         total = queryset.count()
 
         for article in queryset.iterator(chunk_size=50):
+            if is_gov_url(article.link):
+                self.stdout.write(f"Skipped {article.external_id} because it is already a .gov URL.")
+                if delay > 0:
+                    time.sleep(delay)
+                continue
+
             resolved = resolve_final_url(article.link)
             if resolved.rate_limited:
                 skipped += 1
