@@ -195,7 +195,6 @@ class CollectNewsCommandTestCase(TestCase):
         mock_resolve.assert_not_called()
         mock_send_email.assert_called_once()
 
-
 class UrlResolverTestCase(TestCase):
     @patch("newsfeed.url_resolver.requests.get")
     def test_resolve_final_url_returns_terminal_url_even_on_forbidden(self, mock_get):
@@ -280,8 +279,6 @@ class BackfillLinksCommandTestCase(TestCase):
         mock_resolve.assert_not_called()
         self.assertEqual(mock_sleep.call_count, 1)
 
-    @patch("newsfeed.management.commands.backfill_final_links.time.sleep")
-    @patch("newsfeed.management.commands.backfill_final_links.resolve_final_url")
     def test_backfill_skips_rate_limited_articles(self, mock_resolve, mock_sleep):
         article = Article.objects.create(
             external_id="a3",

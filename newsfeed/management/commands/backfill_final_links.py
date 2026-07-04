@@ -7,7 +7,6 @@ from newsfeed.models import Article
 from newsfeed.url_resolver import resolve_final_url
 from scripts.support import logger
 
-
 def is_gov_url(url: str | None) -> bool:
     if not url:
         return False
@@ -40,7 +39,6 @@ class Command(BaseCommand):
                 if delay > 0:
                     time.sleep(delay)
                 continue
-
             resolved = resolve_final_url(article.link)
             if resolved.rate_limited:
                 skipped += 1
