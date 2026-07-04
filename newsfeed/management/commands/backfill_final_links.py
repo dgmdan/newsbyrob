@@ -7,6 +7,7 @@ from newsfeed.models import Article
 from newsfeed.url_resolver import resolve_final_url
 from scripts.support import logger
 
+
 def is_gov_url(url: str | None) -> bool:
     if not url:
         return False

@@ -279,6 +279,8 @@ class BackfillLinksCommandTestCase(TestCase):
         mock_resolve.assert_not_called()
         self.assertEqual(mock_sleep.call_count, 1)
 
+    @patch("newsfeed.management.commands.backfill_final_links.time.sleep")
+    @patch("newsfeed.management.commands.backfill_final_links.resolve_final_url")
     def test_backfill_skips_rate_limited_articles(self, mock_resolve, mock_sleep):
         article = Article.objects.create(
             external_id="a3",
