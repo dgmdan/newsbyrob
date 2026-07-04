@@ -2,15 +2,16 @@ import datetime
 import hashlib
 import html
 import re
+from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
 from newsfeed.models import Article, Tag
+from newsfeed.url_resolver import resolve_final_url
 from scripts.feed_config import CATEGORIES, NewArticle, SITES
 from scripts.support import logger, send_email_update, urlformat
 
@@ -18,6 +19,14 @@ from scripts.support import logger, send_email_update, urlformat
 TAG_SPLIT_RE = re.compile(r"[;,|]")
 UNINFORMATIVE_SECTION_LABELS = {"national", "local", "regional", "international"}
 MAX_EXTERNAL_ID_LENGTH = Article._meta.get_field("external_id").max_length
+
+
+def is_gov_url(url: str | None) -> bool:
+    if not url:
+        return False
+    parsed = urlparse(url.strip())
+    hostname = (parsed.hostname or "").lower()
+    return hostname.endswith(".gov")
 
 
 def normalize_external_id(value: str | None) -> str:
@@ -66,29 +75,28 @@ class Command(BaseCommand):
         newstories = []
         created_count = 0
 
-        with transaction.atomic():
-            for site_name, (base_url, module) in SITES.items():
-                if selected_site and site_name != selected_site:
+        for site_name, (base_url, module) in SITES.items():
+            if selected_site and site_name != selected_site:
+                continue
+            categories = CATEGORIES.get(site_name, [])
+            for category in categories:
+                if selected_category and category != selected_category:
                     continue
-                categories = CATEGORIES.get(site_name, [])
-                for category in categories:
-                    if selected_category and category != selected_category:
+                try:
+                    feed_items = module.ingest_xml(category, base_url, NewArticle)
+                except Exception as exc:  # defensive guard
+                    logger.warning(f"Feed {site_name}:{category} failed: {exc}")
+                    continue
+                if not feed_items:
+                    continue
+                for feed_item in feed_items:
+                    article, created = self._save_article(feed_item, site_name, category)
+                    if not article:
                         continue
-                    try:
-                        feed_items = module.ingest_xml(category, base_url, NewArticle)
-                    except Exception as exc:  # defensive guard
-                        logger.warning(f"Feed {site_name}:{category} failed: {exc}")
-                        continue
-                    if not feed_items:
-                        continue
-                    for feed_item in feed_items:
-                        article, created = self._save_article(feed_item, site_name, category)
-                        if not article:
-                            continue
-                        if created:
-                            created_count += 1
-                            if article.link:
-                                newstories.append((article.link, site_name, category, article.title))
+                    if created:
+                        created_count += 1
+                        if article.link:
+                            newstories.append((article.link, site_name, category, article.title))
         if newstories:
             html = urlformat(newstories)
             email_sent = send_email_update(html)
@@ -110,10 +118,14 @@ class Command(BaseCommand):
             return None, False
 
         title = feed_item.title or ""
-        description = self._resolve_description(feed_item.description, title, feed_item.link)
+        if is_gov_url(feed_item.link):
+            resolved_link = feed_item.link or ""
+        else:
+            resolved_link = resolve_final_url(feed_item.link).url if feed_item.link else ""
+        description = self._resolve_description(feed_item.description, title, resolved_link)
         defaults = {
             "title": title,
-            "link": feed_item.link or "",
+            "link": resolved_link or (feed_item.link or ""),
             "description": description,
             "category": category or feed_item.category or "",
             "site": site_name,
