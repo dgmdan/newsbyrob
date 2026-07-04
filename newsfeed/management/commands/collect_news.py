@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from newsfeed.models import Article, Tag
+from newsfeed.url_resolver import resolve_final_url
 from scripts.feed_config import CATEGORIES, NewArticle, SITES
 from scripts.support import logger, send_email_update, urlformat
 
@@ -110,10 +111,11 @@ class Command(BaseCommand):
             return None, False
 
         title = feed_item.title or ""
-        description = self._resolve_description(feed_item.description, title, feed_item.link)
+        resolved_link = resolve_final_url(feed_item.link).url if feed_item.link else ""
+        description = self._resolve_description(feed_item.description, title, resolved_link)
         defaults = {
             "title": title,
-            "link": feed_item.link or "",
+            "link": resolved_link or (feed_item.link or ""),
             "description": description,
             "category": category or feed_item.category or "",
             "site": site_name,
