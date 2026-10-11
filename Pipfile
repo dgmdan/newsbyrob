@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 beautifulsoup4 = "==4.14.3"
 curl-cffi = "==0.14.0"
-django = "==5.2.7"
+django = "==6.1.2"
 gunicorn = "==21.2.0"
 lxml = "==6.0.2"
 numpy = "==2.3.5"

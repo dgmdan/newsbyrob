@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e34bdf0f792a59967fd28f06b198838b2060b2e5efab93d4329f3f448be032b7"
+            "sha256": "886d85ee688156dc1b5090db78ace42de5d22e97ca1489deea126c0f1631658b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -346,12 +346,12 @@
         },
         "django": {
             "hashes": [
-                "sha256:59a13a6515f787dec9d97a0438cd2efac78c8aca1c80025244b0fe507fe0754b",
-                "sha256:e0f6f12e2551b1716a95a63a1366ca91bbcd7be059862c1b18f989b1da356cdd"
+                "sha256:141efee6ec64d1db6db90683bf734c550102450f444fb099063b0be1bd27d991",
+                "sha256:a1e92451ccb8b514e91bbb3b6d186d20b4030558f116b5d9de6535455ff210b7"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.10'",
-            "version": "==5.2.7"
+            "markers": "python_version >= '3.12'",
+            "version": "==6.1.2"
         },
         "greenlet": {
             "hashes": [
