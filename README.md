@@ -7,7 +7,7 @@ A dear friend of my fiancée, Rob, used to curate his own email listings of the 
 
 ## Requirements
 - Python 3.14 and [Pipenv](https://pipenv.pypa.io/)
-- Dependencies are declared in `Pipfile` and pinned in `Pipfile.lock` (Django 5.2.7 is bundled with the rest).
+- Dependencies are declared in `Pipfile` and pinned in `Pipfile.lock` (Django 6.1 is bundled with the rest).
 
 ## Cloning and setting up the environment
 Open a terminal and run the following (adjust the directory path as needed):
