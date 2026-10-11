@@ -1,13 +1,13 @@
 # News by Rob
 
-[![Python ->3.11](https://img.shields.io/badge/Python-%3E3.11-blue)](https://www.python.org/)
+[![Python-3.14](https://img.shields.io/badge/Python-3.14-blue)](https://www.python.org/)
 
 ## Purpose
 A dear friend of my fiancée, Rob, used to curate his own email listings of the latest shifts in U.S. immigration law. When he passed, I built this project so that the same news could keep circulating in his memory. The scraper aggregates RSS feeds across multiple government and advocacy sites, stores every article in a SQLite database, and still emails you whenever new content is discovered. The Django web layer now lets you browse the accumulated links, see what tags were applied, and filter the roster of stories without opening an inbox.
 
 ## Requirements
-- Python 3.11+
-- All dependencies listed in `requirements.txt` (Django 5.2.7 is bundled with the rest).
+- Python 3.14 and [Pipenv](https://pipenv.pypa.io/)
+- Dependencies are declared in `Pipfile` and pinned in `Pipfile.lock` (Django 5.2.7 is bundled with the rest).
 
 ## Cloning and setting up the environment
 Open a terminal and run the following (adjust the directory path as needed):
@@ -15,22 +15,16 @@ Open a terminal and run the following (adjust the directory path as needed):
 ```bash
 $ git clone https://github.com/Landcruiser87/newsbyrob.git
 $ cd newsbyrob
-$ python -m venv .news_venv
-$ source .news_venv/bin/activate  # On Windows: .news_venv\\Scripts\\activate.bat
+$ pip install --user pipenv  # if you don't already have it
 ```
 
-Upgrade `pip`/`setuptools` and confirm you only see the base packages:
+Install the project dependencies into a Pipenv-managed virtualenv:
 
 ```bash
-$ pip install --upgrade pip setuptools
-$ pip list  # Expect just pip/setuptools in a fresh venv
+$ pipenv sync
 ```
 
-Now install the project dependencies:
-
-```bash
-$ pip install -r requirements.txt
-```
+Prefix project commands with `pipenv run` (e.g. `pipenv run python manage.py runserver`), or open a shell inside the virtualenv with `pipenv shell`.
 
 ## Directory and secret setup
 ```bash
@@ -58,16 +52,16 @@ The scraper still relies on Gmail SMTP and the same `support.send_email_update` 
 ## Running the scraper and web UI
 1. Let Django prepare the SQLite schema:
    ```bash
-   $ python manage.py migrate
+   $ pipenv run python manage.py migrate
    ```
 2. Scrape the feeds once, populate the database, and trigger the familiar notification email:
    ```bash
-   $ python manage.py collect_news
+   $ pipenv run python manage.py collect_news
    ```
    This command reuses the RSS/Playwright modules under `scripts/`, stores every item in `db.sqlite3`, and emails the new links.
 3. Start the development server:
    ```bash
-   $ python manage.py runserver
+   $ pipenv run python manage.py runserver
    ```
 4. Visit `http://127.0.0.1:8000/` to browse collected articles. Use the tag filters at the top of the page to narrow results, and click any headline to jump to the original story. The UI is backed by tags derived from the original category names and keywords, so you can also filter on sites or curated terms.
 5. Use the new search box alongside the filters to look for an exact word or phrase inside article titles and summaries; the search prefers whole-word (or whole-phrase) matches and keeps the current tag filter in place.
@@ -76,7 +70,7 @@ The scraper still relies on Gmail SMTP and the same `support.send_email_update` 
 Want to manage the records via the admin? Create a superuser (if you haven’t already):
 
 ```bash
-$ python manage.py createsuperuser
+$ pipenv run python manage.py createsuperuser
 ```
 
 ## Data layout
@@ -100,10 +94,10 @@ $ python manage.py createsuperuser
 Run Django’s test suite with:
 
 ```bash
-$ python manage.py test newsfeed
+$ pipenv run python manage.py test newsfeed
 ```
 
-If you ever add tests elsewhere, just point the command at that app (e.g., `python manage.py test newsfeed.models`). The command uses the same SQLite settings, so it works inside your activated virtualenv.
+If you ever add tests elsewhere, just point the command at that app (e.g., `python manage.py test newsfeed.models`). The command uses the same SQLite settings, so it works the same under `pipenv run`.
 
 ## Maintenance helpers
 - `python manage.py fix_future_pub_dates [--limit N]` revisits any `Article` records where `pub_date` is still ahead of the current time, scrapes the original link for a corrected published timestamp, and rewrites the stored date (falling back to the run time when the scrape fails).

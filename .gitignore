@@ -143,5 +143,4 @@ dmypy.json
 .Rhistory
 .DS_Store
 *.log
-*.lock
 staticfiles/
